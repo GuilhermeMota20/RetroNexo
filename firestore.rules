@@ -1,0 +1,50 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function owns(userId) { return signedIn() && request.auth.uid == userId; }
+    function validAvatar(avatar) {
+      return avatar in ['pixel-1', 'pixel-2', 'pixel-3', 'pixel-4', 'pixel-5', 'pixel-6', 'pixel-7', 'pixel-8', 'pixel-9', 'pixel-10', 'pixel-11', 'pixel-12', 'pixel-13', 'pixel-14'];
+    }
+
+    match /users/{userId} {
+      allow read: if owns(userId);
+      allow create: if owns(userId)
+        && request.resource.data.uid == userId
+        && request.resource.data.keys().hasOnly(['uid', 'displayName', 'email', 'avatar', 'favorites', 'createdAt', 'updatedAt'])
+        && validAvatar(request.resource.data.avatar)
+        && request.resource.data.favorites is list;
+      allow update: if owns(userId)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName', 'email', 'avatar', 'favorites', 'updatedAt'])
+        && validAvatar(request.resource.data.avatar)
+        && request.resource.data.favorites is list;
+    }
+
+    match /romRequests/{requestId} {
+      allow read: if signedIn();
+      allow create: if owns(requestId)
+        && request.resource.data.authorUid == request.auth.uid
+        && request.resource.data.keys().hasOnly(['authorUid', 'authorName', 'title', 'emulator', 'note', 'status', 'voteCount', 'priority', 'createdAt', 'updatedAt'])
+        && request.resource.data.status == 'pending'
+        && request.resource.data.voteCount == 0
+        && request.resource.data.priority == false;
+      allow update: if signedIn()
+        && resource.data.authorUid != request.auth.uid
+        && !exists(/databases/$(database)/documents/romRequests/$(requestId)/votes/$(request.auth.uid))
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['voteCount', 'priority', 'updatedAt'])
+        && request.resource.data.voteCount == resource.data.voteCount + 1
+        && request.resource.data.voteCount <= 15
+        && request.resource.data.priority == (request.resource.data.voteCount >= 15)
+        && getAfter(/databases/$(database)/documents/romRequests/$(requestId)/votes/$(request.auth.uid)).data.uid == request.auth.uid;
+
+      match /votes/{voterId} {
+        allow read: if owns(voterId);
+        allow create: if owns(voterId)
+          && request.resource.data.keys().hasOnly(['uid', 'createdAt'])
+          && request.resource.data.uid == request.auth.uid;
+      }
+    }
+
+    match /{document=**} { allow read, write: if false; }
+  }
+}
