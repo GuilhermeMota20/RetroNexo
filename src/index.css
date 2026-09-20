@@ -145,7 +145,7 @@
   html {
     cursor: url("/cursors/retronexo-default.svg") 6 4, default;
   }
-  a[href], button:not(:disabled), label[for], select, summary, [role="button"], [role="option"] {
+  a[href], button:not(:disabled), label[for], label.retronexo-button, label.retronexo-button-secondary, select, summary, [role="button"], [role="option"] {
     cursor: url("/cursors/retronexo-click.svg") 15 4, pointer;
   }
   input:not(:disabled):not([type="checkbox"]):not([type="radio"]), textarea:not(:disabled) {
