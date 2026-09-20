@@ -458,6 +458,36 @@ html.big-picture-active #root {
   right: .45rem;
   color: rgb(var(--rn-pink));
 }
+.big-picture-cover > .big-picture-favorite-badge {
+  position: absolute;
+  z-index: 3;
+  top: .65rem;
+  right: .65rem;
+  display: grid;
+  width: 2.25rem;
+  height: 2.25rem;
+  place-items: center;
+  border: 1px solid rgb(var(--rn-pink));
+  border-radius: .35rem;
+  background: rgb(var(--rn-grey-300) / .96);
+  box-shadow: -4px 4px 0 #100F18;
+  color: rgb(var(--rn-pink)) !important;
+  font-size: 1rem !important;
+  transition: transform .15s, box-shadow .15s, background-color .15s;
+}
+.big-picture-cover > .big-picture-favorite-badge svg {
+  position: static;
+  z-index: auto;
+  color: currentColor;
+  filter: none;
+}
+.big-picture-game:hover .big-picture-favorite-badge,
+.big-picture-game:focus-visible .big-picture-favorite-badge,
+.big-picture-game.is-selected .big-picture-favorite-badge {
+  background: rgb(var(--rn-pink) / .18);
+  box-shadow: -4px 4px 0 rgb(var(--rn-pink));
+  transform: translate(-1px, -1px);
+}
 .big-picture-card-copy {
   display: flex;
   min-height: 5.4rem;
