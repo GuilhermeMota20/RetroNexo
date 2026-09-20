@@ -1,7 +1,9 @@
 import { faMagnifyingGlass } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import type { CSSProperties, RefObject } from "react";
+import type { EmulatorGroup } from "../../lib/emulators";
 import type { Rom } from "../../types";
+import { BigPictureConsoleTabs } from "./BigPictureConsoleTabs";
 import { BigPictureLocalRomCard } from "../BigPictureLocalRomCard";
 import { BigPictureRomCard } from "../BigPictureRomCard";
 import { BigPictureClock } from "./BigPictureClock";
@@ -9,6 +11,10 @@ import { BigPictureLibraryCommands } from "./BigPictureLibraryCommands";
 
 type BigPictureLibraryProps = {
   activeIndex: number;
+  activeEmulator: string;
+  consoleGroups: EmulatorGroup[];
+  consoleTabIndex: number;
+  consoleTabsFocused: boolean;
   favoriteRomIds: string[];
   focused: boolean;
   games: Rom[];
@@ -19,11 +25,12 @@ type BigPictureLibraryProps = {
   onLoadLocalRom: (file: File) => void;
   onOpenSearch: () => void;
   onPlay: (rom: Rom) => void;
+  onSelectConsole: (index: number) => void;
   onSelect: (index: number) => void;
 };
 
 /** Cabeçalho, busca e trilha horizontal de ROMs. */
-export function BigPictureLibrary({ activeIndex, favoriteRomIds, focused, games, inputRef, railRef, searchFocused, term, onLoadLocalRom, onOpenSearch, onPlay, onSelect }: BigPictureLibraryProps) {
+export function BigPictureLibrary({ activeIndex, activeEmulator, consoleGroups, consoleTabIndex, consoleTabsFocused, favoriteRomIds, focused, games, inputRef, railRef, searchFocused, term, onLoadLocalRom, onOpenSearch, onPlay, onSelectConsole, onSelect }: BigPictureLibraryProps) {
   const totalItems = games.length + 1;
   const centered = totalItems <= 7;
   const railStyle = centered ? { "--big-picture-card-count": totalItems } as CSSProperties : undefined;
@@ -42,18 +49,22 @@ export function BigPictureLibrary({ activeIndex, favoriteRomIds, focused, games,
         </button>
       </div>
 
-      <div className={`big-picture-rail hide-scrollbar ${centered ? "is-centered" : ""}`} ref={railRef} role="listbox" style={railStyle}>
-        <BigPictureLocalRomCard inputRef={inputRef} onLoad={onLoadLocalRom} onSelect={() => onSelect(0)} selected={activeIndex === 0} />
-        {games.map((rom, index) => (
-          <BigPictureRomCard
-            favorite={favoriteRomIds.includes(rom.id)}
-            key={rom.id}
-            onPlay={() => onPlay(rom)}
-            onSelect={() => onSelect(index + 1)}
-            rom={rom}
-            selected={index + 1 === activeIndex}
-          />
-        ))}
+      <BigPictureConsoleTabs activeEmulator={activeEmulator} focused={consoleTabsFocused} groups={consoleGroups} onSelect={onSelectConsole} selectedIndex={consoleTabIndex} />
+
+      <div aria-labelledby={`big-picture-console-tab-${consoleTabIndex}`} id="big-picture-library-panel" role="tabpanel">
+        <div className={`big-picture-rail hide-scrollbar ${centered ? "is-centered" : ""}`} ref={railRef} role="listbox" style={railStyle}>
+          <BigPictureLocalRomCard inputRef={inputRef} onLoad={onLoadLocalRom} onSelect={() => onSelect(0)} selected={activeIndex === 0} />
+          {games.map((rom, index) => (
+            <BigPictureRomCard
+              favorite={favoriteRomIds.includes(rom.id)}
+              key={rom.id}
+              onPlay={() => onPlay(rom)}
+              onSelect={() => onSelect(index + 1)}
+              rom={rom}
+              selected={index + 1 === activeIndex}
+            />
+          ))}
+        </div>
       </div>
       <BigPictureLibraryCommands favorite={Boolean(activeIndex > 0 && favoriteRomIds.includes(games[activeIndex - 1]?.id ?? ""))} visible={focused && activeIndex > 0} />
     </section>

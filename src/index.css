@@ -422,6 +422,47 @@ html.big-picture-active #root {
   gap: .5rem;
   margin-top: 1rem;
 }
+.big-picture-console-tabs {
+  display: flex;
+  flex: 0 0 auto;
+  gap: .5rem;
+  margin-top: 1rem;
+  padding: .2rem 0 .5rem .5rem;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+}
+.big-picture-console-tab {
+  flex: 0 0 auto;
+  min-height: 2rem;
+  padding: .4rem .75rem;
+  border: 1px solid rgb(var(--rn-border));
+  border-radius: .4rem;
+  background: rgb(var(--rn-grey-300));
+  color: rgb(var(--rn-grey-100));
+  box-shadow: -3px 3px 0 #100F18;
+  font: inherit;
+  font-size: .65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: transform .15s, box-shadow .15s, border-color .15s, color .15s;
+}
+.big-picture-console-tab:hover,
+.big-picture-console-tab:focus-visible,
+.big-picture-console-tab.is-selected {
+  border-color: rgb(var(--rn-blue));
+  color: rgb(var(--rn-white));
+  outline: none;
+}
+.big-picture-console-tab.is-selected { color: rgb(var(--rn-blue)); }
+.big-picture-console-tab.is-controller-selected {
+  background: rgb(var(--rn-blue));
+  color: rgb(var(--rn-blue-dark));
+  box-shadow: -3px 3px 0 rgb(var(--rn-blue));
+  transform: translate(-3px, 3px);
+}
+.big-picture-library > [role="tabpanel"] { display: flex; min-height: 0; flex: 1 1 auto; }
+.big-picture-library > [role="tabpanel"] .big-picture-rail { width: 100%; }
 .big-picture-clock {
   color: rgb(var(--rn-white));
   font-size: clamp(1.25rem, 2vw, 1.75rem);

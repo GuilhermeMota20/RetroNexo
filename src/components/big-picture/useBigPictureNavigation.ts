@@ -8,6 +8,7 @@ type UseBigPictureNavigationOptions = {
   toolbarIndex: number;
   onConfirm: () => void;
   onExit: () => void;
+  onMoveConsoleTab: (direction: -1 | 1) => void;
   onMoveGame: (direction: -1 | 1) => void;
   onOpenSearch: () => void;
   onSecondaryAction: () => void;
@@ -29,19 +30,30 @@ const getGamepadInput = (gamepad: Gamepad) => {
 };
 
 /** Centraliza a leitura de teclado e XInput para não duplicar regras de foco. */
-export function useBigPictureNavigation({ focusArea, searchOpen, toolbarItemCount, toolbarIndex, onConfirm, onExit, onMoveGame, onOpenSearch, onSecondaryAction, setFocusArea, setToolbarIndex }: UseBigPictureNavigationOptions) {
+export function useBigPictureNavigation({ focusArea, searchOpen, toolbarItemCount, toolbarIndex, onConfirm, onExit, onMoveConsoleTab, onMoveGame, onOpenSearch, onSecondaryAction, setFocusArea, setToolbarIndex }: UseBigPictureNavigationOptions) {
   const previousGamepadInput = useRef<string | null>(null);
 
   const moveFocusVertically = (direction: -1 | 1) => {
     setFocusArea((area) => {
-      if (direction < 0) return area === "toolbar" ? "library" : "search";
-      return area === "search" ? "library" : "toolbar";
+      if (direction < 0) {
+        if (area === "toolbar") return "library";
+        if (area === "library") return "console-tabs";
+        if (area === "console-tabs") return "search";
+        return "search";
+      }
+      if (area === "search") return "console-tabs";
+      if (area === "console-tabs") return "library";
+      return "toolbar";
     });
   };
 
   const moveHorizontally = (direction: -1 | 1) => {
     if (focusArea === "toolbar") {
       setToolbarIndex((index) => (index + direction + toolbarItemCount) % toolbarItemCount);
+      return;
+    }
+    if (focusArea === "console-tabs") {
+      onMoveConsoleTab(direction);
       return;
     }
     if (focusArea === "library") onMoveGame(direction);
@@ -68,7 +80,7 @@ export function useBigPictureNavigation({ focusArea, searchOpen, toolbarItemCoun
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [focusArea, onConfirm, onMoveGame, searchOpen, toolbarIndex]);
+  }, [focusArea, onConfirm, onMoveConsoleTab, onMoveGame, searchOpen, toolbarIndex]);
 
   useEffect(() => {
     let frameId = 0;
@@ -98,5 +110,5 @@ export function useBigPictureNavigation({ focusArea, searchOpen, toolbarItemCoun
 
     frameId = window.requestAnimationFrame(pollGamepad);
     return () => window.cancelAnimationFrame(frameId);
-  }, [focusArea, onConfirm, onExit, onMoveGame, onOpenSearch, onSecondaryAction, searchOpen, toolbarIndex]);
+  }, [focusArea, onConfirm, onExit, onMoveConsoleTab, onMoveGame, onOpenSearch, onSecondaryAction, searchOpen, toolbarIndex]);
 }

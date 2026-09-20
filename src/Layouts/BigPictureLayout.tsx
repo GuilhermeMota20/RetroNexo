@@ -1,4 +1,4 @@
-import { faArrowRightFromBracket, faClockRotateLeft, faGamepad, faHeart, faLayerGroup } from "@fortawesome/free-solid-svg-icons";
+import { faArrowRightFromBracket, faGamepad, faHeart } from "@fortawesome/free-solid-svg-icons";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { BigPictureBrand } from "../components/big-picture/BigPictureBrand";
@@ -8,6 +8,7 @@ import { BigPictureToolbar } from "../components/big-picture/BigPictureToolbar";
 import type { BigPictureFocusArea, BigPictureToolbarItem } from "../components/big-picture/types";
 import { useBigPictureNavigation } from "../components/big-picture/useBigPictureNavigation";
 import { BigPictureKeyboard } from "../components/BigPictureKeyboard";
+import { getEmulatorGroups, normalizeEmulator } from "../lib/emulators";
 import type { Rom } from "../types";
 
 type BigPictureLayoutProps = {
@@ -22,8 +23,6 @@ type BigPictureLayoutProps = {
 const toolbarFilters: BigPictureToolbarItem[] = [
   { id: "all", label: "Biblioteca", icon: faGamepad },
   { id: "favorites", label: "Favoritos", icon: faHeart },
-  { id: "console", label: "Por console", icon: faLayerGroup },
-  { id: "recent", label: "Recentes", icon: faClockRotateLeft },
   { id: "exit", label: "Sair do Big Picture", icon: faArrowRightFromBracket },
 ];
 
@@ -32,20 +31,24 @@ export function BigPictureLayout({ roms, favoriteRomIds, onLoadLocalRom, onExit,
   const railRef = useRef<HTMLDivElement>(null);
   const localRomInputRef = useRef<HTMLInputElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [activeEmulator, setActiveEmulator] = useState("all");
   const [activeFilter, setActiveFilter] = useState("all");
+  const [consoleTabIndex, setConsoleTabIndex] = useState(0);
   const [focusArea, setFocusArea] = useState<BigPictureFocusArea>("library");
   const [toolbarIndex, setToolbarIndex] = useState(0);
   const [term, setTerm] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
+  const consoleGroups = useMemo(() => [{ id: "all", label: "Todos" }, ...getEmulatorGroups(roms)], [roms]);
 
   const games = useMemo(() => {
     const normalizedTerm = term.trim().toLowerCase();
     return roms.filter((rom) => {
       const matchesFilter = activeFilter !== "favorites" || favoriteRomIds.includes(rom.id);
+      const matchesConsole = activeEmulator === "all" || normalizeEmulator(rom.emulator) === activeEmulator;
       const matchesSearch = !normalizedTerm || [rom.title, rom.genre, rom.emulator].join(" ").toLowerCase().includes(normalizedTerm);
-      return matchesFilter && matchesSearch;
+      return matchesFilter && matchesConsole && matchesSearch;
     });
-  }, [activeFilter, favoriteRomIds, roms, term]);
+  }, [activeEmulator, activeFilter, favoriteRomIds, roms, term]);
 
   const totalLibraryItems = games.length + 1;
   const activeGame = activeIndex > 0 ? games[activeIndex - 1] : undefined;
@@ -59,6 +62,23 @@ export function BigPictureLayout({ roms, favoriteRomIds, onLoadLocalRom, onExit,
     });
   }, [totalLibraryItems]);
 
+  const selectConsole = useCallback((index: number) => {
+    const group = consoleGroups[index];
+    if (!group) return;
+    setActiveEmulator(group.id);
+    setConsoleTabIndex(index);
+    setActiveIndex(0);
+  }, [consoleGroups]);
+
+  const moveConsole = useCallback((direction: -1 | 1) => {
+    setConsoleTabIndex((index) => {
+      const nextIndex = (index + direction + consoleGroups.length) % consoleGroups.length;
+      setActiveEmulator(consoleGroups[nextIndex].id);
+      setActiveIndex(0);
+      return nextIndex;
+    });
+  }, [consoleGroups]);
+
   const runToolbarAction = useCallback((index: number) => {
     const item = toolbarFilters[index];
     if (!item) return;
@@ -71,9 +91,10 @@ export function BigPictureLayout({ roms, favoriteRomIds, onLoadLocalRom, onExit,
   const confirmSelection = useCallback(() => {
     if (focusArea === "toolbar") return runToolbarAction(toolbarIndex);
     if (focusArea === "search") return setSearchOpen(true);
+    if (focusArea === "console-tabs") return selectConsole(consoleTabIndex);
     if (activeGame) return onPlay(activeGame);
     localRomInputRef.current?.click();
-  }, [activeGame, focusArea, onPlay, runToolbarAction, toolbarIndex]);
+  }, [activeGame, consoleTabIndex, focusArea, onPlay, runToolbarAction, selectConsole, toolbarIndex]);
 
   const openSearch = useCallback(() => {
     setFocusArea("search");
@@ -91,6 +112,16 @@ export function BigPictureLayout({ roms, favoriteRomIds, onLoadLocalRom, onExit,
     setActiveIndex((index) => Math.min(index, Math.max(totalLibraryItems - 1, 0)));
   }, [totalLibraryItems]);
 
+  useEffect(() => {
+    const index = consoleGroups.findIndex((group) => group.id === activeEmulator);
+    if (index < 0) {
+      setActiveEmulator("all");
+      setConsoleTabIndex(0);
+      return;
+    }
+    setConsoleTabIndex(index);
+  }, [activeEmulator, consoleGroups]);
+
   useBigPictureNavigation({
     focusArea,
     searchOpen,
@@ -98,6 +129,7 @@ export function BigPictureLayout({ roms, favoriteRomIds, onLoadLocalRom, onExit,
     toolbarIndex,
     onConfirm: confirmSelection,
     onExit,
+    onMoveConsoleTab: moveConsole,
     onMoveGame: moveGame,
     onOpenSearch: openSearch,
     onSecondaryAction: toggleActiveFavorite,
@@ -110,6 +142,10 @@ export function BigPictureLayout({ roms, favoriteRomIds, onLoadLocalRom, onExit,
       <main className="big-picture-main">
         <BigPictureLibrary
           activeIndex={activeIndex}
+          activeEmulator={activeEmulator}
+          consoleGroups={consoleGroups}
+          consoleTabIndex={consoleTabIndex}
+          consoleTabsFocused={focusArea === "console-tabs"}
           favoriteRomIds={favoriteRomIds}
           focused={focusArea === "library"}
           games={games}
@@ -117,6 +153,7 @@ export function BigPictureLayout({ roms, favoriteRomIds, onLoadLocalRom, onExit,
           onLoadLocalRom={onLoadLocalRom}
           onOpenSearch={openSearch}
           onPlay={onPlay}
+          onSelectConsole={selectConsole}
           onSelect={(index) => {
             setFocusArea("library");
             setActiveIndex(index);
