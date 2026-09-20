@@ -2,3 +2,13 @@ node_modules
 dist
 .env
 .env.local
+
+# Contexto local para agentes de desenvolvimento (nunca versionar)
+/AGENTS.md
+/.agent/
+/docs/ARCHITECTURE.md
+/docs/DECISIONS.md
+/docs/API.md
+/docs/DESIGN_SYSTEM.md
+/docs/BUSINESS_RULES.md
+/docs/COMPONENTS.md
